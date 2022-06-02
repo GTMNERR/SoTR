@@ -13,7 +13,7 @@ stats3 <- stats %>%
 
 
 ## need to pivot data so values are in column not by row in order to graph in a boxplot
-statslong <-stats3 %>%
+statslong <- stats3 %>%
 pivot_longer(cols = 4:27,
              names_to = "nut", 
              values_to = "count")

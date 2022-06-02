@@ -2,17 +2,50 @@
 
 ## RUn Load and param_filter before
 
-# nitrogen stacked graph in mg.L
-sitespivot <- sites %>% 
-  filter(PN > 0) %>%
-  select(wbid,
-         DATE,
-         DON, 
-         DIN, 
-         PN) %>%
+#  AVERAGE per sit3
+
+avg_sitebar <- stats2 %>% 
+ group_by(site, wbid) %>%
+  summarise(ave_DON = mean(DON, na.rm = TRUE),
+            ave_DIN = mean(DIN, na.rm = TRUE),
+            ave_PN = mean(PN, na.rm = TRUE))
+
+sitespivot <- avg_sitebar %>% 
+  #filter(ave_PN > 0) %>%
   pivot_longer(cols = 3:5,
                names_to = "nitro_source",
                values_to = "conc") %>%
+  ggplot(aes(x = site, y = conc, fill = nitro_source)) +
+  geom_col()+
+  facet_wrap(~wbid) + 
+  scale_fill_okabeito() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.0, hjust = 1)) +
+  theme(axis.text = element_text(color = 'black')) +
+  labs(x = '',
+       y = "Nitrogen (mg/L)",
+       fill = "Nitrogen Source")
+
+  
+  
+  
+  
+  
+
+  
+# nitrogen stacked graph in mg.L
+ sitespivot <- stats2 %>% 
+   filter(PN > 0) %>%
+   select(wbid,
+           site,
+           DATE,
+           DON, 
+           DIN, 
+           PN) %>%
+   pivot_longer(cols = 4:6,
+                 names_to = "nitro_source",
+                 values_to = "conc") %>%
   ggplot(aes(x = DATE, y = conc, fill = nitro_source)) +
   geom_col()+
   facet_wrap(~wbid) + 
