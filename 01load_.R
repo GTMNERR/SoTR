@@ -32,9 +32,8 @@ here::here('data')
 ## %>%  pass the left hand side of the operator to the first argument 
 ## of the right hand side of the operator
 
-###clip data file cliped out about 1 yr of NO23 based on reporting at MDL
 ##WORKS
-dat <- readxl::read_xlsx(here::here('data', 'Guana_masterdata_2021_clip.xlsx'), 
+dat <- readxl::read_xlsx(here::here('data', 'Guana_masterdata_dupClip.xlsx'), 
                          sheet = 'Sheet1') %>% 
   janitor::clean_names()
 
@@ -125,7 +124,11 @@ dat2 <- dat2 %>%
 ## Load Coloring Script
 ## Load plotting script
 
+##check dat for NA or BLANKS ?? I have quite a few??
+View(dat2 %>% dplyr::filter(is.na(result)))
 
+## remove NA files
+dat2 <- dat2 %>% dplyr::filter(result != "NA")
 
 
 
