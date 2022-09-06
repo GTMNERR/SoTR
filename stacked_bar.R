@@ -5,17 +5,74 @@
 #  AVERAGE per sit3
 
 avg_sitebar <- stats2 %>% 
- group_by(site, wbid) %>%
+ group_by(site_friendly, wbid) %>%
   summarise(ave_DON = mean(DON, na.rm = TRUE),
             ave_DIN = mean(DIN, na.rm = TRUE),
             ave_PN = mean(PN, na.rm = TRUE))
+
+#DONT NEED THIS CODE SINCE I GOT RID OF THE .5 SITES EARLIER 
+avg_sitebar <- avg_sitebar %>% dplyr::filter(site != "NA")
+stats2 <- stats2 %>% dplyr::filter(site != "NA")
+
 
 sitespivot <- avg_sitebar %>% 
   #filter(ave_PN > 0) %>%
   pivot_longer(cols = 3:5,
                names_to = "nitro_source",
+               values_to = "conc")
+
+GTMpi <- sitespivot%>%
+  full_join(PIave, by =c("site_friendly", 'conc', "nitro_source"))
+
+GTMpi$site_friendly <- factor(GTMpi$site_friendly, levels=c("Micklers", "GL1", "GL2", "Lake Middle", "GL4", "Lake South","River North", "GR1", "Guana River", "GR3", "PI"))
+
+N_spp <- GTMpi%>%
+  ggplot(aes(x = site_friendly, y = conc, fill = nitro_source)) +
+  geom_col()+
+  #facet_wrap(~wbid) + 
+  scale_fill_okabeito(labels = c('DIN', 'DON', 'PN')) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.0, hjust = 1.0)) +
+  theme(axis.text = element_text(color = 'black')) +
+  labs(x = '',
+       y = "Nitrogen (mg/L)",
+       fill = "Nitrogen Source")
+
+ggsave(plot = N_spp, filename = here('output', 'TN_PI_spp.png'), dpi=120)
+  
+## ----- Average by year and site over time----------
+## NO FINISHED?
+  
+ave_byYear <- stats2 %>% 
+  filter(PN > 0) %>%
+  select(wbid,
+         site,
+         DATE,
+         DON, 
+         DIN, 
+         PN) %>%
+dplyr::mutate(month = month(DATE),
+              day = day(DATE),
+              year = as.character(year(DATE)))
+
+year1 <- ave_byYear %>%
+  filter(year == 2017) %>% 
+  group_by(site, wbid) %>%
+  summarise(ave_DON = mean(DON, na.rm = TRUE),
+            ave_DIN = mean(DIN, na.rm = TRUE),
+            ave_PN = mean(PN, na.rm = TRUE))%>%
+  select(site, ave_DON, ave_DIN, ave_PN, wbid)
+
+ 
+
+
+
+
+  pivot_longer(cols = 4:6,
+               names_to = "nitro_source",
                values_to = "conc") %>%
-  ggplot(aes(x = site, y = conc, fill = nitro_source)) +
+  ggplot(aes(x = DATE, y = conc, fill = nitro_source)) +
   geom_col()+
   facet_wrap(~wbid) + 
   scale_fill_okabeito() +
@@ -28,13 +85,9 @@ sitespivot <- avg_sitebar %>%
        fill = "Nitrogen Source")
 
   
-  
-  
-  
-  
 
   
-# nitrogen stacked graph in mg.L
+#---------# nitrogen stacked graph in mg.L
  sitespivot <- stats2 %>% 
    filter(PN > 0) %>%
    select(wbid,
@@ -57,6 +110,8 @@ sitespivot <- avg_sitebar %>%
   labs(x = '',
        y = "Nitrogen (mg/L)",
        fill = "Nitrogen Source")
+ 
+
 
 ggsave(plot = b, 
        filename = here("output", "NStackBarmgL.png"), dpi = 120)
@@ -64,7 +119,7 @@ ggsave(plot = b,
 
 #nitrogen uM
 
-sites %>% 
+stats2 %>% 
   filter(PN > 0) %>%
   select(wbid,
          DATE,
@@ -149,7 +204,7 @@ sites %>%
 
 ## Chlorophyll mgL
 
-CHL <- sites %>%
+CHL <- stats2 %>%
   select(wbid, DATE, CHLA_C) %>%
   ggplot(aes(x = DATE)) +
   #geom_col(aes(y = DIP)) +
@@ -167,22 +222,5 @@ ggsave(plot = CHL, filename = here("output", "CHLsplit.png"), dpi = 120)
 
 
 
-## TRYING FOR simple bar charts ...... ?????
-  
-dat4 <- dat3 %>%
-    dplyr::select(site_friendly,
-                  component_short,
-                  result) %>%
-    dplyr::filter(component_short == "CHLA_C") %>%
-    mutate(row = row_number()) %>%
-    pivot_wider(names_from = component_short, values_from = result) %>%
-  
-  
-    ggplot(aes(site_friendly)) +
-    geom_bar() +
-    scale_y_continuous(expand = c(0,0)) +
-    labs(y = "",
-         x = "",
-         title = paste("Chlorophyll-a"))
-  
+
 
