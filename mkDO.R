@@ -25,18 +25,19 @@ mk_DO <- do2 %>%
          do_pct)
 
 DO_plot <- mk_DO %>%
-          ggplot(aes(x = date_time_stamp, y = do_mgl)) +
-          geom_point(aes(color = do_mgl <= 2), size = 0.5) +
-          geom_hline(yintercept = 2) + 
-          scale_color_manual(name = "Hypoxia \nThreshold \n2 mg/L",
+          ggplot(aes(x = date_time_stamp, y = do_pct)) +
+          geom_point(aes(color = do_pct <= 42), size = 0.5) +
+          geom_hline(yintercept = 42) + 
+          scale_color_manual(name = "Hypoxia \nThreshold \n42%",
                      labels = c("Above", "Below"),
                      values = c('grey62', 'red')) +
-          scale_y_continuous(expand = c(0,0), breaks = seq(0,14, by = 2)) +
+          #scale_y_continuous(expand = c(0,0), breaks = seq(0,14, by = 2)) +
+          scale_y_continuous(expand = c(0,0)) +
           theme_classic() +
           theme(axis.text = element_text(color = 'black')) +
           labs(x = "",
-               y = "Dissolved Oxygen (mg/L)")
+               y = "Dissolved Oxygen %")
 
 ggsave(DO_plot,
-       filename = here('output', 'DO_plot_MK.png'))
+       filename = here('output', 'DO_MK_pct.png'))
 
