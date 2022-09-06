@@ -5,7 +5,9 @@
 
 #remove bad data - flagged data
 dat3 <- dat2 %>% dplyr::filter(!grepl("-3", flag))
-
+dat3 <- dat3 %>% dplyr::filter(!grepl("GTMGL1.5NUT", station_code))
+dat3 <- dat3 %>% dplyr::filter(!grepl("GTMGL2.5NUT", station_code))
+dat3 <- dat3 %>% dplyr::filter(!grepl("GTMGL3.5NUT", station_code))
 #BETTER WAY TO DO MULTI FILTER ABOVE THAN BELOW
 
 
@@ -26,7 +28,7 @@ dat3 <- dat2 %>% dplyr::filter(!grepl("-3", flag))
 NH4 <- dat3 %>% 
         filter(component_short == "NH4F") %>% 
         dplyr::select(date_sampled,
-                             site,
+                             site_friendly,
                              wbid,
                              component_short,
                              result) %>% 
@@ -44,7 +46,7 @@ ggplot(NH4, mapping = aes(x = date_sampled, y = NH4uM)) +
 NO23 <- dat3 %>% 
         filter(component_short == "NO23F") %>% 
         dplyr::select(date_sampled,
-                        site,
+                      site_friendly,
                         wbid,
                         component_short,
                         result) %>% 
@@ -60,7 +62,7 @@ ggplotly(ggplot(NO23, mapping = aes(x = date_sampled, y = NO23uM)) +
 TKN <- dat3 %>% 
         filter(component_short == "TKN") %>% 
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>% 
@@ -76,7 +78,7 @@ ggplot(TKN, mapping = aes(x = date_sampled, y = TKNuM)) +
 TKNF <- dat3 %>% 
         filter(component_short == "TKNF") %>% 
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>% 
@@ -92,7 +94,7 @@ ggplot(TKNF, mapping = aes(x = date_sampled, y = TKNFuM)) +
 CHLA <- dat3 %>% 
         filter(component_short == "CHLA_C") %>% 
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>% 
@@ -109,7 +111,7 @@ ggplot(CHLA, mapping = aes(x = date_sampled, y = CHLA_C)) +
 TSS <- dat3 %>% 
         filter(component_short == "TSS") %>% 
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>% 
@@ -124,7 +126,7 @@ ggplot(TSS, mapping = aes(x = date_sampled, y = TSS)) +
 DIP <- dat3 %>% 
         filter(component_short == "PO4F") %>% 
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>% 
@@ -141,7 +143,7 @@ ggplot(DIP, mapping = aes(x = date_sampled, y = DIPuM)) +
 TP <- dat3 %>% 
       filter(component_short == "TP") %>% 
       dplyr::select(date_sampled,
-                    site,
+                    site_friendly,
                     wbid,
                     component_short,
                     result) %>% 
@@ -157,7 +159,7 @@ ggplot(TP, mapping = aes(x = date_sampled, y = TPuM)) +
 SALT <- dat3 %>%
         filter(component_short == "SALT") %>%
         dplyr::select(date_sampled,
-                      site,
+                      site_friendly,
                       wbid,
                       component_short,
                       result) %>%
@@ -168,14 +170,14 @@ SALT <- dat3 %>%
 
 #This code is left joining all the dataframes I just created back into one! 
 stats <- NH4 %>% 
-  left_join(NO23, by = c("site", "wbid", "date_sampled")) %>% 
-  left_join(TKN, by = c("site", "wbid", "date_sampled")) %>% 
-  left_join(TKNF, by = c("site", "wbid", "date_sampled")) %>%
-  left_join(CHLA, by = c("site", "wbid", "date_sampled")) %>%
-  left_join(TSS, by = c("site", "wbid", "date_sampled")) %>%
-  left_join(DIP, by = c("site", "wbid", "date_sampled")) %>%
-  left_join(TP, by = c("site", "wbid", "date_sampled")) %>%
-  left_join(SALT, by = c("site", "wbid", "date_sampled"))
+  left_join(NO23, by = c("site_friendly", "wbid", "date_sampled")) %>% 
+  left_join(TKN, by = c("site_friendly", "wbid", "date_sampled")) %>% 
+  left_join(TKNF, by = c("site_friendly", "wbid", "date_sampled")) %>%
+  left_join(CHLA, by = c("site_friendly", "wbid", "date_sampled")) %>%
+  left_join(TSS, by = c("site_friendly", "wbid", "date_sampled")) %>%
+  left_join(DIP, by = c("site_friendly", "wbid", "date_sampled")) %>%
+  left_join(TP, by = c("site_friendly", "wbid", "date_sampled")) %>%
+  left_join(SALT, by = c("site_friendly", "wbid", "date_sampled"))
 
 # clean the work space environment
 rm(NH4, NO23, TKN, TKNF, TSS, CHLA, TP, DIP, SALT)
@@ -239,7 +241,7 @@ NOT USING LM SINCE MY VALUES ARE NEGATIVE AND I DONT HAVE MUCH TSS DATA...
 # also running my stoichiometry comparisions 
 # also converting Nsed and Nphyto back into mg/L
 
-sites <- stats2 %>%
+stats3 <- stats2 %>%
          mutate(N_limit = 100*(DINuM/(DINuM + 1.6)),
                 P_limit = 100*(DIPuM/(DIPuM + 0.24)),
                 TN_TPuM = TNuM/TPuM,
@@ -250,12 +252,12 @@ sites <- stats2 %>%
 
 
 #calculate min, max and mean of each parameter
-sites_calc <- sites %>%
+sites_calc <- stats3 %>%
     group_by(wbid) %>%
     summarise(across(where(is.numeric), list(min = min, max = max, median = median, mean = mean), na.rm = TRUE))
 
 
-count <- sites %>%
+count <- stats3 %>%
     group_by(wbid) %>%
     summarise(across(everything(), ~ n()))
 
@@ -272,7 +274,7 @@ all <- sites_calc %>%
             Phosphorous_effuM = CHLA_C_mean/DIPuM_mean)
 
 
-write.xlsx(all, here::here("output", "N_and_P_statistics2.xlsx"))
+write.xlsx(all, here::here("output", "N_and_P_statistics.xlsx"))
 
 
 
