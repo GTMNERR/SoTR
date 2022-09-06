@@ -3,9 +3,15 @@
 # READ IN PI DATA FOR THE STACKED N BARCHART 
 ## DATA ALREADY RUN THROUGH STATS AND CALCULATIONS 
 
-PI <- readxl::read_xlsx(here::here('data', '2022-02-16_PI-data-OR-clip.xlsx'))
+PI <- readxl::read_xlsx(here::here('data', '2022-08-29_PI-data-mo-OR_clip.xlsx'))
 
 
+
+#all col names to upper
+names(PI)[2:40] <- toupper(names(PI)[2:40])
+
+PI <- rename(PI, DATE = DATETIMESTAMP)
+                
 PI2 <- PI %>%
   select(DATE, DON, DIN, PN) %>% 
   mutate(wbid = "Pine Island",
@@ -13,11 +19,40 @@ PI2 <- PI %>%
          DON = as.numeric(DON),
          DIN = as.numeric(DIN),
          PN = as.numeric(PN)) %>%
-  filter(PN > 0)
+  #filter(PN > 0) %>%
+pivot_longer(cols = 2:4,
+             names_to = "nitro_source",
+             values_to = "conc") %>%
+  
+PIave <- PI%>%
+  group_by(station_code) %>%
+summarise(ave_DON = mean(DON, na.rm = TRUE),
+          ave_DIN = mean(DIN, na.rm = TRUE),
+          ave_PN = mean(PN, na.rm = TRUE))
+
+PIave <- rename(PIave, site_friendly = station_code)
+
+PIave <- PIave %>%
+  pivot_longer(cols = 2:4,
+               names_to = "nitro_source",
+               values_to = "conc")
   
 
-# #all col names to upper
-# names(PI2)[1:42] <- toupper(names(PI2)[1:42])
+
+  ggplot(aes(x = wbid, y = conc, fill = nitro_source)) +
+  geom_col()+
+  #facet_wrap(~wbid) + 
+  scale_fill_okabeito(labels = c('DIN', 'DON', 'PN')) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.0, hjust = 1.0)) +
+  theme(axis.text = element_text(color = 'black')) +
+  labs(x = '',
+       y = "Nitrogen (mg/L)",
+       fill = "Nitrogen Source")
+
+
+
 # 
 # PI2$DON <- as.numeric(PI2$DON)
 # PI2$DIN <- as.numeric(PI2$DIN)
@@ -32,9 +67,6 @@ S2bind <- sites %>%
          DON, 
          DIN, 
          PN)
-# names(S2bind)[1] <- toupper(names(S2bind)[1])
-
-
 
 
 #BIND WITH MY DATA
