@@ -14,6 +14,12 @@ dat <- readxl::read_xlsx(here::here('data', 'Guana_MD2021_DEPclip.xlsx'),
                          sheet = 'Sheet1') %>% 
   janitor::clean_names()
 
+
+### trying to rework this clip to get in all 2022 data but also not have a hole in my dataset
+dat <- readxl::read_xlsx(here::here('data', 'Guana_masterdata_2022.06.21.xlsx'), 
+                         sheet = 'Sheet1') %>% 
+  janitor::clean_names()
+
 ## change column name to work with previously written code
 dat <- rename(dat, date_sampled = sample_date)
 
@@ -252,6 +258,43 @@ TP <- dat3 %>%
 ggplot(TP, mapping = aes(x = date_sampled, y = TPuM)) +
   geom_point()
 
+DO <- dat3 %>% 
+  filter(component_short == "DO") %>% 
+  dplyr::select(date_sampled,
+                site,
+                wbid,
+                component_short,
+                result) %>% 
+  mutate(row = row_number()) %>%
+  pivot_wider(names_from = component_short, 
+              values_from = result) %>% 
+  select(-row)
+
+ENT <- dat3 %>% 
+  filter(component_short == "ENTERO") %>% 
+  dplyr::select(date_sampled,
+                site,
+                wbid,
+                component_short,
+                result) %>% 
+  mutate(row = row_number()) %>%
+  pivot_wider(names_from = component_short, 
+              values_from = result) %>% 
+  select(-row)
+
+FEC <- dat3 %>% 
+  filter(component_short == "FECCOL") %>% 
+  dplyr::select(date_sampled,
+                site,
+                wbid,
+                component_short,
+                result) %>% 
+  mutate(row = row_number()) %>%
+  pivot_wider(names_from = component_short, 
+              values_from = result) %>% 
+  select(-row)
+
+
 SALT <- dat3 %>%
   filter(component_short == "SALT") %>%
   dplyr::select(date_sampled,
@@ -273,10 +316,13 @@ stats <- NH4 %>%
   left_join(TSS, by = c("site", "wbid", "date_sampled")) %>%
   left_join(DIP, by = c("site", "wbid", "date_sampled")) %>%
   left_join(TP, by = c("site", "wbid", "date_sampled")) %>%
+  left_join(DO, by = c("site", "wbid", "date_sampled")) %>%
+  left_join(ENT, by = c("site", "wbid", "date_sampled")) %>%
+  left_join(FEC, by = c("site", "wbid", "date_sampled")) %>%
   left_join(SALT, by = c("site", "wbid", "date_sampled"))
 
 # clean the work space environment
-rm(NH4, NO23, TKN, TKNF, TSS, CHLA, TP, DIP, SALT)
+rm(NH4, NO23, TKN, TKNF, TSS, CHLA, TP, DIP, SALT, DO, ENT, FEC)
 
 
 
@@ -295,6 +341,9 @@ mean_monthly <- meanstats %>%
   dplyr::summarise(TN_avg = mean(TN, na.rm = TRUE),
                    TP_avg = mean(TP, na.rm = TRUE),
                    CHLA_avg = mean(CHLA_C, na.rm = TRUE),
+                   DO_avg = mean(DO, na.rm = TRUE),
+                   ENT_avg = mean(ENTERO, na.rm = TRUE),
+                   FEC_avg = mean(FECCOL, na.rm = TRUE),
                    .groups = "keep") %>%
   dplyr::mutate(YEAR = lubridate::year(date_sampled),
                 MONTH_abb = lubridate::month(date_sampled, label = TRUE, abbr = TRUE),
@@ -321,7 +370,11 @@ mean_yearly <- mean_monthly %>%
   dplyr::group_by(wbid, YEAR) %>%
   dplyr::summarise(TN_agm = psych::geometric.mean(TN_avg, na.rm = T),
                    TP_agm = psych::geometric.mean(TP_avg, na.rm = T),
-                   CHLA_agm = psych::geometric.mean(CHLA_avg, na.rm = T)) %>%
+                   CHLA_agm = psych::geometric.mean(CHLA_avg, na.rm = T),
+                   DO_agm = psych::geometric.mean(DO_avg, na.rm = T),
+                   ENT_agm = psych::geometric.mean(ENT_avg, na.rm = T),
+                   FEC_agm = psych::geometric.mean(FEC_avg, na.rm = T)
+                   ) %>%
   dplyr::ungroup() %>%
   dplyr::mutate(YEAR = forcats::as_factor(YEAR))
 
@@ -344,12 +397,12 @@ agm_year <- function(param, space, axis_title) {
     dplyr::filter(param == nut, space == wbid) %>%
     ggplot(aes(x = YEAR, y = agm)) +
     geom_line(size = 0.5, group = 1) +
-    geom_point(aes(color = agm <= 0.65), size = 3) +
-    geom_hline(yintercept = 0.65) +
-    scale_color_manual(name = "State \nThreshold \n0.65 mg/L \nNitrogen",
+    geom_point(aes(color = agm <= 11), size = 3) +
+    geom_hline(yintercept = 11) +
+    scale_color_manual(name = "State \nThreshold \n11 mg/L \nNitrogen",
                        labels = c("Above", "Below"),
                        values = c('brown3', 'yellow')) +
-    coord_cartesian(ylim = c(0,2)) +
+    #coord_cartesian(ylim = c(0,2)) +
     cowplot::theme_cowplot() +
     scale_y_continuous(expand = c(0,0)) +
     theme(axis.text.x = element_text(angle = 0, vjust=0.3, size=12, color='black')) +
@@ -360,11 +413,14 @@ agm_year <- function(param, space, axis_title) {
   p
 }
 
-agm_year("TN_agm", "Lake", "Geometric Mean Nitrogen (mg/L)")
-agm <- agm_year("TN_agm", "River", "Geometric Mean Nitrogen (mg/L)")
+agmLake <- agm_year("TN_agm", "Lake", "Geometric Mean Nitrogen (mg/L)")
+agmRiver <- agm_year("TN_agm", "River", "Geometric Mean Nitrogen (mg/L)")
 
-ggsave(agm,
-       filename = here('output', 'agm_year_riverclip.png'))
+ggsave(plot = agmRiver, filename = here("output", "agmRiver.png"), dpi = 120)
 
 
+agmLake <- agm_year("CHLA_agm", "Lake", "Geometric Mean Chlorophyll a (mg/L)")
+agmRiver <- agm_year("CHLA_agm", "River", "Geometric Mean Chlorophyll a (mg/L)")
+
+ggsave(plot = agmRiver, filename = here("output", "agmRiver.png"), dpi = 120)
 
